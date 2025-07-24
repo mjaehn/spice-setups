@@ -1,0 +1,488 @@
+#!/usr/bin/env bash
+# ICON-CLM Starter Package (SPICE_v2.3)
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2009-2025, Helmholtz-Zentrum Hereon
+# Contact information: https://www.clm-community.eu/
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# SPICE docs: https://hereon-coast.atlassian.net/wiki/spaces/SPICE/overview
+# ---------------------------------------------------------------
+
+# Script Description:
+# ---------------------------------------------------------------
+#  ICON-CLM subchain scripts
+#
+#  History:
+#  Version    Date       Name
+#  ---------- ---------- ----
+#    1.1      2009/09/02 - 2015/07/08 Burkhardt Rockel / Helmholtz-Zentrum Geesthacht
+#                       Developed subchain scripts for COSMO-CLM starter package
+#    1.2      2018/02/01 Trang Van Pham / DWD
+#                       Rewrote subchain scripts from COSMO-CLM starter package to ICON-CLM
+#                       started package
+#    1.3      2020/02   Burkhardt Rockel / Helmholtz-Zentrum Geesthacht
+#                       Some modification, maintenance
+#    1.4      2024/05   Susanne Brienen / DWD
+#                       Added new predifined machine - DWD NEC with prefix dwd_nec
+#    1.5      2024/07   Beate Geyer / Helmholtz-Zentrum Hereon
+#                       Update for ICON2024.07 and further developments in all scripts
+#                       with contributions from Shweta Singh / DWD
+#    1.6      2024/08   Evgenii Churiulin / KIT
+#                       Added new predifined machine - HUNTER HLRS with prefix hlrs_cpe
+#                       Added new predifined machine - HAWK HLRS with prefix hlrs_intel
+#    1.7      2024/08   Evgenii Churiulin / KIT
+#                       Added new addon daily-spice based on Soner Bagcaci and Patrick Ludwig updates
+#    1.8      2024/09   Michael Jähn / ETHZ
+#                       Added new predifined machine - CSCS-Alps with prefix cscs-alps
+#    1.9      2025/01   Evgenii Churiulin / KIT; Stefan Poll / FZJ
+#                       Added new predifined machine - jsc-cpumachine based on Heimo Truhetz updates
+# ---------------------------------------------------------------
+
+#set -x
+
+if [ ${0%/*} == "."  ] || [ ${0%/*} == $PWD ]
+then :
+else
+  echo  === ERROR === subchain must be called from within its directory
+  echo "               " it was called from: ${0%/*}
+  exit 1
+fi
+
+if [ $# -lt 1 ]
+then
+  echo wrong number of arguments
+  echo usage : subchain \<action\>
+  echo   where \<action\> is one of the following options
+  echo   "  "\(please read the documentation for details on how to use them\):
+  echo   start : starts the chain
+  echo   prep \<YYYYMM\> : restarts the chain with a a pre-processing job
+  echo   conv2icon \<YYYYMM\> : restarts the chain with a conv2icon job
+  echo   icon : restarts the chain with an icon job
+  echo   arch [\<YYYYMM\>] : restarts the chain with an archiving job
+  echo   post [\<YYYYMM\>] : restarts a post-processing job
+  echo   clean : deletes all files and directories created
+  echo   create : creates the directory structure \(only needed
+  echo   "           "if the directory structure was corrupted\)
+  exit
+fi
+
+ACTION=$1
+
+#################################################
+# START global settings
+#... include global environment settings for your job
+#################################################
+
+source job_settings
+
+#################################################
+# END global settings
+#... no more changes needed beyond this line
+#...   except specific settings for the used computer system
+#################################################
+
+#... safety check
+if [ $PWD != $PFDIR/${EXPID} ]
+then
+  echo === ERROR === scripts directory is not the same as EXPID directory
+  echo "basename" = $PWD
+  echo "EXPID   " = ${PFDIR}/${EXPID}
+  exit
+fi
+
+#################################################
+# delete all created files
+#################################################
+  # turn on extended pattern matching in case of bash shell
+[ -n "$BASH_VERSION" ] && shopt -s extglob
+if [ ${ACTION} == 'clean' ]
+then
+  #... safety request
+  while true; do
+    echo "Do you wish to delete all created files and directories of your experiment?(y/n)"
+    read yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer y(=yes) or n(=no).";;
+    esac
+  done
+  #... remove files and directories
+
+NODEL="subchain|job_settings|scripts"
+
+  rm -rf !(${NODEL})
+  rm -rf ${ARCHIVE_OUTDIR}/${EXPID}
+  rm -rf ${WORKDIR}/${EXPID}
+  rm -rf ${SCRATCHDIR}/${EXPID}
+  exit
+fi
+
+#################################################
+# create the job directory structure
+#################################################
+### either
+###   at the start of the model chain
+### or
+###   if the command option "create" is used
+
+if [ -f ${PFDIR}/${EXPID}/date.log ] && [ ${ACTION} != 'create' ]
+then :
+else
+  echo -------------------------------------------
+  echo creating directory structure for ${EXPID}
+  echo -------------------------------------------
+  mkdir -p ${WORKDIR}/${EXPID}
+  mkdir -p ${SCRATCHDIR}/${EXPID}
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/prep
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/conv2icon
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/icon
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/arch
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/post
+  mkdir -p ${SCRATCHDIR}/${EXPID}/input
+  mkdir -p ${SCRATCHDIR}/${EXPID}/input/prep
+  ln -fs ${SCRATCHDIR}/${EXPID}/output/prep ${SCRATCHDIR}/${EXPID}/input/conv2icon
+  ln -fs ${SCRATCHDIR}/${EXPID}/output/conv2icon ${SCRATCHDIR}/${EXPID}/input/icon
+  ln -fs ${SCRATCHDIR}/${EXPID}/output/icon ${SCRATCHDIR}/${EXPID}/input/arch
+  #ln -fs ${SCRATCHDIR}/${EXPID}/output/icon ${SCRATCHDIR}/${EXPID}/input/post
+  ln -fs ${SCRATCHDIR}/${EXPID}/output/arch ${SCRATCHDIR}/${EXPID}/input/post
+  mkdir -p ${SCRATCHDIR}/${EXPID}/tmp
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/prep
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/conv2icon
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/icon
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/arch
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/post
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/prep
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/conv2icon
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/icon
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/arch
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/post
+  mkdir -p ${RESDIR}
+  mkdir -p ${INIDIR}
+  mkdir -p ${WORKDIR}/${EXPID}/post
+  if [ ${ITYPE_TS} -ge 2 ]    # yearly time series need more CPU time
+  then
+    mkdir -p ${WORKDIR}/${EXPID}/post/yearly
+  fi
+  mkdir -p ${ARCHIVE_OUTDIR}/${EXPID}
+
+  [ ${ACTION} == 'create' ] && exit
+
+fi
+
+#Create date.log file:
+if [ ! -f ${PFDIR}/${EXPID}/date.log ]
+then
+  echo ${YDATE_START} > ${PFDIR}/${EXPID}/date.log
+fi
+
+### get the current date
+cd ${PFDIR}/${EXPID}
+CURRENT_DATE=$(cat ${PFDIR}/${EXPID}/date.log | cut -c1-14)
+
+### at the end of the model run just exit
+ if [ ${CURRENT_DATE} -ge ${YDATE_STOP} ] && [ $# -lt 2 ]
+ then
+       echo --- ICON experiment FINISHED --
+       exit
+ fi
+
+#################################################
+#################################################
+##  determine which action has to be perfomed  ##
+#################################################
+#################################################
+
+case "${ACTION}" in
+
+create)
+#################################################
+# just create the directory structure
+#################################################
+# in case directories has been deleted,
+# but are still needed
+
+  exit;;
+
+start)
+#################################################
+# start the experiment
+#################################################
+# this starts the experiment and submits the first prep job
+
+  echo "subchain          START    $(LANG=en_us_88591;date)" >> ${PFDIR}/${EXPID}/chain_status.log
+  ${PFDIR}/${EXPID}/subchain prep
+
+  exit;;
+
+prep)
+#################################################
+# Preprocessing settings and submission
+#################################################
+
+  if [ $# -gt 2 ]
+  then
+      echo wrong number of arguments, must be 0 or 1
+      echo usage: subchain prep [\<current_date\>]
+      exit
+    fi
+  #... if a second argument is given, this will be used for the CURRENT_DATE
+  #    instead of the value in date.log
+  if [ $# -eq 2 ]
+  then
+    CURRENT_DATE=${2:0:6}01${YDATE_START:8:6}
+  fi
+
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/prep/prep_${EXPID}_${YYYY}_${MM}.o
+
+  echo "******************************"
+  echo \* submitting PREP job ${YYYY}${MM} \*
+  echo "******************************"
+
+  cd ${PFDIR}/${EXPID}
+
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --partition=${PARTITION_PREP} \
+    --time=${TIME_PREP} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --job-name=prep_${EXPID} \
+    --nodes=${NODES} \
+    --ntasks-per-node=${NTASKS_PER_NODE} \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/prep.job.sh
+
+exit;;
+
+conv2icon)
+#################################################
+# CONV2ICON settings and submission
+#################################################
+
+  if [ $# -gt 2 ]
+  then
+      echo wrong number of arguments, must be 0 or 1
+      echo usage: subchain conv2icon [\<current_date\>]
+    exit
+  fi
+  #... if a second argument is given, that will be used for the CURRENT_DATE instead of the value in date.log
+  if [ $# -eq 2 ]
+  then
+    CURRENT_DATE=$2
+  fi
+
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/conv2icon/conv2icon_${EXPID}_${YYYY}_${MM}.o
+
+  echo "**********************************"
+  echo \* submitting CONV2ICON job ${YYYY}${MM} \*
+  echo "**********************************"
+
+  cd ${PFDIR}/${EXPID}
+
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --partition=${PARTITION_CONV2ICON} \
+    --time=${TIME_CONV2ICON} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --job-name=conv2icon_${EXPID} \
+    --nodes=${NODES} \
+    --ntasks-per-node=${NTASKS_PER_NODE} \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/conv2icon.job.sh
+
+exit;;
+
+icon)
+#################################################
+# ICON settings and submission
+#################################################
+
+  if [ "$2" != "noprep" ]  #otherwise if input data for ICON already exist for the next month run "subchain icon noprep"
+  then
+    if [ ${CURRENT_DATE:6:4} -eq 0100 ]
+    then
+      ### submit a preprocessing job for the following month in parallel
+      NEXT_DATE=$(${CFU} get_next_dates ${CURRENT_DATE} 01:00:00 ${ITYPE_CALENDAR} | cut -c1-10)
+      if [[ ${NEXT_DATE} -lt ${YDATE_STOP} ]]
+      then
+        ${PFDIR}/${EXPID}/subchain prep ${NEXT_DATE}
+      fi
+    fi
+  fi
+
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+#  YYYY_MM=${CURRENT_DATE:0:4}_${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/icon/icon_${EXPID}_${YYYY}_${MM}.o
+
+  echo "******************************"
+  echo \* submitting ICON job ${YYYY}${MM} \*
+  echo "******************************"
+
+  cd ${PFDIR}/${EXPID}
+
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  export NUM_THREAD_ICON=${NUM_THREAD_ICON}
+  export GRAN_ICON=${GRAN_ICON}
+  export NUM_IO_PROCS=${NUM_IO_PROCS}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --job-name=icon_${EXPID}_${YYYY}${MM} \
+    --time=${TIME_ICON} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --partition=${PARTITION_ICON} \
+    --nodes=${NODES_ICON} \
+    --ntasks-per-node=4 \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/icon.job.sh
+
+exit;;
+
+arch)
+#################################################
+# Archiving settings and submission
+#################################################
+
+  if [ $# -eq 2 ]
+  then
+        CURRENT_DATE=${2:0:6}01${YDATE_START:8:6}  # just in case of an arch re-run for a specific month
+  fi
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/arch/arch_${EXPID}_${YYYY}_${MM}.o
+
+  ###  submit the archiving job
+  echo "***********************"
+  echo \* submitting ARCH job \*
+  echo "***********************"
+
+  cd ${PFDIR}/${EXPID}
+
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --partition=${PARTITION_ARCH} \
+    --time=${TIME_ARCH} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --job-name=arch_${EXPID} \
+    --nodes=${NODES} \
+    --ntasks-per-node=${NTASKS_PER_NODE} \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/arch.job.sh
+
+exit;;
+
+post)
+#################################################
+# Post-processing settings and submission
+#################################################
+
+  if [ $# -gt 1 ]
+  then
+    CURRENT_DATE=${2:0:6}01${YDATE_START:8:6}  # just in case of a postprocessing re-run for a specific month
+  fi
+  if [ $# -gt 2 ]
+  then
+    ONLY_YEARLY=1
+  else
+    ONLY_YEARLY=0
+  fi
+
+  NEXT_DATE=$(${CFU} get_next_dates ${CURRENT_DATE} 01:00:00 ${ITYPE_CALENDAR} | cut -c1-10)
+
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/post/post_${EXPID}_${YYYY}_${MM}.o
+
+  JOB_TIME=${TIME_POST}
+
+  if [ ${ITYPE_TS} -gt 1 ]    # yearly time series need more CPU time
+  then
+    if  [ ${MM} -eq 1 ] && [ ${CURRENT_DATE} -ne ${YDATE_START} ]
+    then
+      JOB_TIME=${TIME_POST_YEARLY}
+    elif [ ${NEXT_DATE} -eq ${YDATE_STOP} ]
+    then
+      JOB_TIME=${TIME_POST_YEARLY}
+    fi
+  fi
+
+  ###  submit the post processing job
+  echo "******************************"
+  echo \* submitting POST job ${YYYY}${MM} \*
+  echo "******************************"
+
+  cd ${PFDIR}/${EXPID}
+
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  export ONLY_YEARLY=${ONLY_YEARLY}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --partition=${PARTITION_POST} \
+    --time=${JOB_TIME} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --job-name=post_${EXPID} \
+    --nodes=${NODES} \
+    --ntasks-per-node=${NTASKS_PER_NODE} \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/post.job.sh
+
+exit;;
+
+#################################################
+# invalid action parameter
+#################################################
+*)
+    echo "Error in SUBCHAIN"  > ${PFDIR}/${EXPID}/error_message
+    echo "ERROR: invalid action: " ${ACTION}  >> ${PFDIR}/${EXPID}/error_message
+    if [ -n "${NOTIFICATION_ADDRESS}" ]
+    then
+      ${NOTIFICATION_SCRIPT} ${NOTIFICATION_ADDRESS}  "SUBCHAIN ${EXPID} abort due to errors" ${PFDIR}/${EXPID}/error_message
+    fi
+exit 1;;
+
+esac
+

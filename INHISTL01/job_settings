@@ -1,0 +1,310 @@
+# ICON-CLM Starter Package (SPICE_v2.3)
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2009-2025, Helmholtz-Zentrum Hereon
+# Contact information: https://www.clm-community.eu/
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# SPICE docs: https://hereon-coast.atlassian.net/wiki/spaces/SPICE/overview
+# ---------------------------------------------------------------
+
+#
+# This file includes the main settings for the simulation and is called at the
+# beginning of each script in the job chain
+#
+
+#... base directory (can be overruled by settings below)
+SPDIR=${HOME}/spice
+
+#... experiment identifier and working directory
+EXPID=INHISTL01    # alphanumeric characters for job identification - please adapt name!
+EXPDIR=            # working directory (should be a persistent location, otherwise on scratch)
+
+#
+#===============================================================================
+#   Main directory settings
+#===============================================================================
+#
+
+PFDIR=${SPDIR}/experiments            # base directory where the scripts for the experiment are stored
+WORKDIR=${EXPDIR}/work             # NONE of the created files under this directory will be deleted at the end of the job chain
+SCRATCHDIR=        # ALL created files under this directory will be deleted at the end of the job chain, therefore:
+                                         # do not use your ${SCRATCH} for the definition of other paths than SCRATCHDIR!!!
+SRCDIR=${SPDIR}/src                      # directory of supplementary programs
+DATADIR=/capstor/store/cscs/c2sm/c2sme/ICON-CLM # ERA5 and GCM input data location
+ARCHIVE_OUTDIR=${EXPDIR}/arch       # directory where the results should be archived
+RESDIR=${WORKDIR}/${EXPID}/restarts      # restart data directory
+INIDIR=${WORKDIR}/${EXPID}/inidata       # directory where some initial data are saved
+ARCHIVE_INPDIR=                          # optional for already prepared forcing data: ini and lbc data (itype_conv2icon=0)
+ICONDIR=${SRCDIR}/icon-model
+
+#
+#===============================================================================
+#   Information on the time period of the simulation
+#===============================================================================
+#
+
+#... set start and end date of the simulation
+YDATE_START_ISO="1950-01-01T00:00:00Z"          # start date of simulation YYYY-MM-DDTHH:MM:SSZ
+YDATE_STOP_ISO="2015-01-01T00:00:00Z"           # end date of simulation YYYY-MM-DDTHH:MM:SSZ
+SCEN="historical"
+#... transfer dates into YYYYMMDDHH format:
+    YDATE_START=${YDATE_START_ISO:0:4}${YDATE_START_ISO:5:2}${YDATE_START_ISO:8:2}${YDATE_START_ISO:11:2}
+    YDATE_STOP=${YDATE_STOP_ISO:0:4}${YDATE_STOP_ISO:5:2}${YDATE_STOP_ISO:8:2}${YDATE_STOP_ISO:11:2}
+
+#... time increment of a partial job
+INC_DATE=01:00:00      # MM:DD:HH  time increment for the ICON-CLM job
+                       # (the other parts of the chain are always monthly)
+                       # valid values are 01:00:00, 00:01:00, 00:02:00, ... , 00:27:00
+
+#... calendar settings
+ITYPE_CALENDAR=0
+    CALENDAR_ARRAY=("proleptic gregorian" "360 day year" "365 day year")
+    CALENDAR=${CALENDAR_ARRAY[ITYPE_CALENDAR]}
+
+#
+#===============================================================================
+#   Email, notification and account settings
+#===============================================================================
+#
+
+#... Email notifications from the batch system
+EMAIL_ADDRESS=     # replace this with your email address or leave the environment
+                   # variable empty to prevent getting emails from the batch system
+                   # this concerns the mailing from the batch system NOT from the scripts
+
+#... Notification from the SPICE scripts
+NOTIFICATION_ADDRESS=     # leave the environment variable empty to prevent getting
+                          # notifications from the scripts in case mailx is used this
+                          # is your email address
+
+#... The default notification script:
+NOTIFICATION_SCRIPT=${SPDIR}/src/notifications/mailx.sh
+
+#... project account (needed at DKRZ and CSCS)
+PROJECT_ACCOUNT=  # replace this with your actual project account
+
+#===============================================================================
+#   Directory and binary path settings for utilities
+#===============================================================================
+
+#... directory and binary path settings for utilities
+CFU=${SRCDIR}/cfu/bin/cfu           # absolute path to directory of utility binaries
+export CDO=cdo
+NCO_BINDIR=/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nco-5.1.9-yykwws3dmcypjzraijgzagmkb6ml2zzo/bin        # absolute path to directory of NCO binaries
+NC_BINDIR=/user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/netcdf-c-4.9.2-5ijnfossknlii33dnqn7asnlmzst3444/bin          # absolute path of the netcdf binaries (ncdump, nccopy)
+UTILS_BINDIR=${SRCDIR}/utils/bin    # absolute path to directory of utility binaries
+PIGZ=pigz                    # only needed, if you want to compress the output with pigz
+PYTHON=${SPDIR}/venv/bin/python                # absolute path to the python3 binary
+CDO_VERSION=2.4.0
+NCO_VERSION=5.1.9
+# CDO settings
+export IGNORE_ATT_COORDINATES=0
+# uenvs (cscs-alps only)
+UENV_ICON=icon-wcp/v1:rc4
+UENV_TOOLS=netcdf-tools/2024:v1
+export CORRECT_CF="${PYTHON} ${SRCDIR}/utils/src/correct_cf.py"
+export INFOV=infon
+
+#===============================================================================
+#   Special script settings
+#===============================================================================
+
+#... conv2icon job settings
+#... choose whether to run conv2icon (=1) or use already existing conv2icon output
+#    (=0; requires specification of ARCHIVE_INPDIR)
+ITYPE_CONV2ICON=1
+
+#... submit icon job in arch.job.sh directly after checking the icon output or at the end of arch.job.sh
+#... 0 = icon-clm and arch run sequentially
+#... 1 = next ICON-CLM starts after successfully checking the output of the current month
+ITYPE_ICON_ARCH_PAR=1
+
+#... choose compression type of output in post-processing and archiving
+#...    0 = no compression
+#...    1 = internal compression (compression in netCDF file, requires netCDF Library with HDF-lib and z-lib)
+#...    2 = external compression (compression with gzip, requires gzip version >=1.6 to be installed)
+#...    3 = external compression (compression with pigz, requires pigz to be installed),
+#...          set TASKS_POST and TASKS_ARCH below for the -p option accordingly
+ITYPE_COMPRESS_POST=1
+ITYPE_COMPRESS_ARCH=1
+
+#... choose how timeseries are combined
+#...    0 = no timeseries
+#...    1 = monthly
+#...    2 = yearly
+#...    3 = 1 & 2 (this doubles the post output !!)
+ITYPE_TS=2
+
+#... choose SAMOVAR to check the original ICON output
+#...    (will be ignored, if SAMOVAR extension is not installed) by setting ITYPE_SAMOVAR
+#...    0 = no SAMOVAR check
+#...    1 = short SAMOVAR check (just the output of the last day of the month in each "outNN" directory)
+#...    2 = long SAMOVAR check (all output files will be checked)
+#...
+#... choose SAMOVAR to check the time series created in post.job.sh (excluded sponge zone) by setting ITYPE_SAMOVAR_TS
+#...    0 = no SAMOVAR check
+#...    1 = SAMOVAR check
+
+ITYPE_SAMOVAR=1
+export SAMOVAR_EXE="${PYTHON} ${SRCDIR}/samovar/samovar.py"
+SAMOVAR_SH=${SRCDIR}/samovar/samovar.sh
+SAMOVAR_LIST=${DATADIR}/rcm_new/europe011/samovar_EUR-11.EC-Earth3-Veg.csv
+ITYPE_SAMOVAR_TS=1
+SAMOVAR_LIST_TS=${DATADIR}/rcm_new/europe011/samovar_ts_EUR-11.EC-Earth3-Veg.csv
+
+#===============================================================================
+#   Initial and boundary data input
+#===============================================================================
+GCM_NAME=NorESM2-MM 			# Adapt this for the respective GCMs e.g. CMCC-CM2-SR, MPI-ESM-HR  NorESM2-M etc.
+GCM_REALIZATION=r1i1p1f1         # e.g. r1i1p1f1 (realization of GCM simulation)
+GCM_SCENARIO=${SCEN}_${GCM_REALIZATION}
+
+GCM_DATADIR=/capstor/store/cscs/c2sm/c2sme/ICON-CLM/gcm/forcing/${GCM_NAME}/${GCM_SCENARIO}     
+GCM_SOILTYPE=/capstor/store/cscs/c2sm/c2sme/reanalyses_dkrz/ERA5/diagnostics/ERA5_soiltype_europe.nc
+GCM_PREFIX='caf'
+HINCBOUND=6 # [hours] if you use daily output you can set HINCBOUND=1,2,3,4,6
+ICON_INPUT_OPTIONAL=',QR,QS'  # this depends on what is available in the coarse grid data
+export SMI_DEFAULT=1.2  # checked in the pre-processing by ccaf2icaf. This has no effect on ICON, ERAInterim, ERA5 reanalysis input
+GCM_REMAP=remaplaf
+
+#===============================================================================
+#   Grid description, climatological and other supplemental data
+#===============================================================================
+
+#... Climate model:
+#    Directory of basic ICON-CLM data:
+INI_BASEDIR=${DATADIR}/rcm_new
+
+##Limited area dynamic grid
+LAM_GRID=${INI_BASEDIR}/europe011/europe011_DOM01.nc
+
+##Radiation grid
+PARENT_GRID=${INI_BASEDIR}/europe011/europe011_DOM01.parent.nc
+##ECRAD data directory. Directory containing supplemental files for the ECRAD radiation scheme.
+ECRADDIR=${ICONDIR}/externals/ecrad/data                     # Point to the directory in the ICON distribution externals/ecrad/data    !!!!!! fill in local setting  !!!!!!
+## Greenhouse concentration file
+GHG_FILENAME=${INI_BASEDIR}/independent/greenhouse_gases/greenhouse_ssp245.nc
+
+#External parameters on ICON grid
+EXTPAR=${INI_BASEDIR}/europe011/external_parameter_icon_europe011_DOM01_tiles_MERIT_cdnc2_HWSD2.0-SOILTYP_9_5_GLlake.nc
+
+# Mapping of ICON parameter names to those given in the mapping file
+OUTPUT_MAPPING_FILE=${SPDIR}/data/csv/mapping_to_cosmo.csv
+
+#... External data file holding land-sea mask and orography of the domain in rotated coordinates.
+#         Needed in the post-processing for interpolation from ICON grid to rotated lat/lon grid
+TARGET_GRID=${INI_BASEDIR}/europe011/europe011_rotated_grid.nc
+
+KINNE_DIR=${INI_BASEDIR}/europe011/interpolated_aeop_R13B05
+VOLC_DIR=${INI_BASEDIR}/independent/volcanic_aeropt
+SP_DIR=${INI_BASEDIR}/independent/MACv2_simple_plumes_merged
+
+# Additional directory for ozone treatment
+OZONE_DIR=${INI_BASEDIR}/europe011/ozone_europe011
+
+# Additional directory for solar irradiation
+SOLAR_DIR=${INI_BASEDIR}/independent/solar_radiation
+
+#===============================================================================
+#   ICON specific settings
+#===============================================================================
+
+#... ICON Executable for icon version 2024.07:
+BINARY_ICON=${ICONDIR}/nvhpc_gpu/bin/icon       # add the name of the ICON binary including its full path here #    !!!!!! fill in local setting  !!!!!!
+
+#... Time step in seconds (if not defined it will be calculated in icon.job.sh):
+DTIME=120
+ZML_SOIL="0.005,0.025,0.07,0.16,0.34,0.7,1.42,2.86,5.74,11.5"    # soil level
+
+#... Output ICON:
+HOUT_INC=(03:00:00 01:00:00 06:00:00 01:00:00 01:00:00 06:00:00 24:00:00 24:00:00 01:00:00 01:00:00 06:00:00 06:00:00 24:00:00) # time increment for each output_nml [HH:MM:SS]
+PRECIP_INTERVAL=PT01H # interval for accumulating tot_prec in ISO8601 (needs to be consistent with HOUT_INC above)
+RUNOFF_INTERVAL=PT06H # interval for accumulating runoff in ISO8601 (needs to be consistent with HOUT_INC above)
+SUNSHINE_INTERVAL=PT24H # interval for accumulating sunshine duration in ISO8601 (needs to be consistent with HOUT_INC above)
+MAXT_INTERVAL=PT24H # interval for min/max of 2m-temperature in ISO8601 (needs to be consistent with HOUT_INC above)
+GUST_INTERVAL=PT01H # interval for maximum of gust in 10m in ISO8601 (needs to be consistent with HOUT_INC above)
+MELT_INTERVAL=PT01H # interval for accumulating snow_melt in ISO8601 (needs to be consistent with HOUT_INC above)
+OPERATION=("" "mean" "mean" "" "" "" "" "max" "" "" "" "" "mean") # operation parameter (this is just a work around until ICON-CLM gets a proper netCDF-CF output)
+NESTING_STREAM=0  # If you want to use an output stream to save quantities as input for further downscaling put the number of the output stream here.
+               #   This chosen output stream is saved as is. Default = 0 means no output stream is saved as input for further downscaling.
+               #   This output stream cannot be used in post.job.sh for building time series
+#... definition of pressure, altitude and height levels for building time series in post.job.sh
+PLEVS_NUK=(925.)
+PLEVS_COR=(200. 250. 300. 400. 500. 600. 700. 750. 850. 1000.)
+
+#... interpolation to vertical height levels above topography this needs an extra
+#    output stream and the quantities z_mc ad topography_c in the output stream
+#    of the constant data
+export HLEV_STREAM=9   # output stream that contains 4D prognostic quantities that has to be interpolated
+                       # In case HLEV_STREAM=0 no vertical interpolation will be performed
+HLEVS=(50.0 100.0 150.0 200.0 250.0 300.0 500.0 700.0)
+#... Select level range UpperLevel - LowerLevel for HLEV_STREAM
+UL=47
+LL=59
+LEVELS=${UL}...${LL}
+
+
+
+#===============================================================================
+#   Global attribute settings in the ICON netCDF output
+#===============================================================================
+
+GA_INSTITUTION="CLMcom-ETH"    # Name of Institution for the global attributes
+GA_TITLE="EURO-CORDEX 0.11 simulation with ICON-CLM and SPICE 2.3"
+#endif ims-cyclone
+GA_PROJECT_ID="EXCLAIM"
+GA_REALIZATION=1
+GA_CONVENTIONS="CF-1.4"
+GA_CONVENTIONSURL="http://www.cfconventions.org/"
+GA_CONTACT="support@c2sm.ethz.ch"
+GA_ICON_CLM_VERSION="ICON-2024.07"
+
+#
+#===============================================================================
+#   Parallelization settings
+#===============================================================================
+#
+
+# General settings
+NTASKS_PER_CORE=1
+NTASKS_PER_NODE=284
+CPUS_PER_TASK=1
+NODES=1
+
+#... prep.job.sh batch settings
+PARTITION_PREP=normal
+TIME_PREP="00-01:00:00"
+(( TASKS_PREP=NODES*NTASKS_PER_NODE ))
+
+#... conv2icon.job.sh settings
+PARTITION_CONV2ICON=normal
+TIME_CONV2ICON="00-02:00:00"
+OMP_THREADS_CONV2ICON=1
+(( TASKS_CONV2ICON=NODES*NTASKS_PER_NODE ))
+
+#...icon.job.sh settings
+NODES_ICON=4                #Number of nodes
+NUM_THREAD_ICON=1           #Number of OpenMP threads:
+HT_ICON=0                   #hyperthreading: 0 - off, 1 - on
+PARTITION_ICON=normal       #select specific node type/partition
+TIME_ICON=00-01:15:00       #requested time in batch queue for ICON simulation
+NUM_IO_PROCS=1              #num_io_procs: 1,2 specified in namelist parallel_nml (icon.job.sh)
+NUM_RESTART_PROCS=1         #num_restart_procs  !number of processors for restart
+NUM_PREFETCH_PROC=1         #num_prefetch_proc         !number of processors for LBC prefetching
+
+#... arch.job.sh batch settings
+PARTITION_ARCH=normal
+TIME_ARCH="00-01:00:00"
+(( TASKS_ARCH=NODES*NTASKS_PER_NODE ))
+
+#... post.job.sh batch settings
+PARTITION_POST=normal
+TIME_POST="00-00:40:00"
+TIME_POST_YEARLY="00-02:00:00"
+OMP_THREADS_POST=1
+(( TASKS_POST=NODES*NTASKS_PER_NODE ))
+
