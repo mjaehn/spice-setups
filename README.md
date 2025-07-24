@@ -4,13 +4,13 @@ This repo serves as a collection of setups for SPICE on CSCS Alps/Säntis.
 
 ## Usage
 
-It is recommended to create a directory `experiments` in the root directory
-of your [SPICE](https://github.com/C2SM/spice) repository and clone this repo inside of it.
+It is recommended put the setups into a `experiments` folder
+of your [SPICE](https://github.com/C2SM/spice) root directory and clone this repo inside of it.
 
 ```bash
 cd ${SPICE_DIR}
-mkdir -p experiments && cd experiments
-git clone git@github.com:C2SM/spice-setups.git
+git clone git@github.com:C2SM/spice-setups.git experiments
+cd experiments
 ```
 
 Afterwards create a copy of an existing case, rename it and adapt the 
