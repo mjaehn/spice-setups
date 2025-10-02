@@ -62,6 +62,7 @@ then
   echo   prep \<YYYYMM\> : restarts the chain with a a pre-processing job
   echo   conv2icon \<YYYYMM\> : restarts the chain with a conv2icon job
   echo   icon : restarts the chain with an icon job
+  echo   icon_make_FG : restarts the chain with an icon_make_FG job
   echo   arch [\<YYYYMM\>] : restarts the chain with an archiving job
   echo   post [\<YYYYMM\>] : restarts a post-processing job
   echo   clean : deletes all files and directories created
@@ -142,6 +143,7 @@ else
   mkdir -p ${SCRATCHDIR}/${EXPID}/output/prep
   mkdir -p ${SCRATCHDIR}/${EXPID}/output/conv2icon
   mkdir -p ${SCRATCHDIR}/${EXPID}/output/icon
+  mkdir -p ${SCRATCHDIR}/${EXPID}/output/icon_make_FG
   mkdir -p ${SCRATCHDIR}/${EXPID}/output/arch
   mkdir -p ${SCRATCHDIR}/${EXPID}/output/post
   mkdir -p ${SCRATCHDIR}/${EXPID}/input
@@ -156,12 +158,14 @@ else
   mkdir -p ${WORKDIR}/${EXPID}/joboutputs/prep
   mkdir -p ${WORKDIR}/${EXPID}/joboutputs/conv2icon
   mkdir -p ${WORKDIR}/${EXPID}/joboutputs/icon
+  mkdir -p ${WORKDIR}/${EXPID}/joboutputs/icon_make_FG
   mkdir -p ${WORKDIR}/${EXPID}/joboutputs/arch
   mkdir -p ${WORKDIR}/${EXPID}/joboutputs/post
   mkdir -p ${WORKDIR}/${EXPID}/joblogs
   mkdir -p ${WORKDIR}/${EXPID}/joblogs/prep
   mkdir -p ${WORKDIR}/${EXPID}/joblogs/conv2icon
   mkdir -p ${WORKDIR}/${EXPID}/joblogs/icon
+  mkdir -p ${WORKDIR}/${EXPID}/joblogs/icon_make_FG
   mkdir -p ${WORKDIR}/${EXPID}/joblogs/arch
   mkdir -p ${WORKDIR}/${EXPID}/joblogs/post
   mkdir -p ${RESDIR}
@@ -366,6 +370,47 @@ icon)
     --error=${JOBLOGFILE}%j \
     --output=${JOBLOGFILE}%j \
     ${PFDIR}/${EXPID}/scripts/icon.job.sh
+
+exit;;
+
+icon_make_FG)
+#################################################
+# ICON make FG settings and submission
+#################################################
+  if [ $# -eq 2 ]
+  then
+    CURRENT_DATE=${2:0:6}01${YDATE_START:8:6}
+  fi
+
+  YYYY=${CURRENT_DATE:0:4}
+  MM=${CURRENT_DATE:4:2}
+#  YYYY_MM=${CURRENT_DATE:0:4}_${CURRENT_DATE:4:2}
+  JOBLOGFILE=${WORKDIR}/${EXPID}/joblogs/icon_make_FG/icon_make_FG_${EXPID}_${YYYY}_${MM}.o
+
+  echo "******************************"
+  echo \* submitting ICON_make_FG job ${YYYY}${MM} \*
+  echo "******************************"
+  cd ${PFDIR}/${EXPID}
+  export CURRENT_DATE=${CURRENT_DATE}
+  export PFDIR=${PFDIR}
+  export EXPID=${EXPID}
+  export NUM_THREAD_ICON=${NUM_THREAD_ICON}
+  export GRAN_ICON=${GRAN_ICON}
+  export NUM_IO_PROCS=${NUM_IO_PROCS}
+  sbatch \
+    ${EMAIL_ADDRESS:+--mail-user="$EMAIL_ADDRESS" --mail-type=FAIL} \
+    --account=${PROJECT_ACCOUNT} \
+    --job-name=icon_${EXPID}_${YYYY}${MM} \
+    --time=${TIME_ICON} \
+    --uenv=${UENV_TOOLS} --view=modules \
+    --partition=${PARTITION_ICON} \
+    --nodes=${NODES_ICON} \
+    --ntasks-per-node=4 \
+    --ntasks-per-core=${NTASKS_PER_CORE} \
+    --cpus-per-task=${CPUS_PER_TASK} \
+    --error=${JOBLOGFILE}%j \
+    --output=${JOBLOGFILE}%j \
+    ${PFDIR}/${EXPID}/scripts/icon_make_FG.job.sh
 
 exit;;
 

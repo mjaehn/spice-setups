@@ -17,11 +17,11 @@
 #
 
 #... base directory (can be overruled by settings below)
-SPDIR=${HOME}/spice
+SPDIR=/users/mjaehn/git/spice/mj-euro_cordex_eval
 
-#... experiment identifier and working directory
-EXPID=INHISTL01    # alphanumeric characters for job identification - please adapt name!
-EXPDIR=            # working directory (should be a persistent location, otherwise on scratch)
+#... experiment identifier
+EXPID=INHISTL01            # alphanumeric characters for job identification
+EXPDIR=/capstor/store/cscs/userlab/cwp06/mjaehn/ICON-CLM
 
 #
 #===============================================================================
@@ -31,10 +31,10 @@ EXPDIR=            # working directory (should be a persistent location, otherwi
 
 PFDIR=${SPDIR}/experiments            # base directory where the scripts for the experiment are stored
 WORKDIR=${EXPDIR}/work             # NONE of the created files under this directory will be deleted at the end of the job chain
-SCRATCHDIR=        # ALL created files under this directory will be deleted at the end of the job chain, therefore:
+SCRATCHDIR=/capstor/scratch/cscs/mjaehn/ICON-CLM/scratch        # ALL created files under this directory will be deleted at the end of the job chain, therefore:
                                          # do not use your ${SCRATCH} for the definition of other paths than SCRATCHDIR!!!
 SRCDIR=${SPDIR}/src                      # directory of supplementary programs
-DATADIR=/capstor/store/cscs/c2sm/c2sme/ICON-CLM # ERA5 and GCM input data location
+DATADIR=/capstor/store/cscs/c2sm/c2sme/ICON-CLM
 ARCHIVE_OUTDIR=${EXPDIR}/arch       # directory where the results should be archived
 RESDIR=${WORKDIR}/${EXPID}/restarts      # restart data directory
 INIDIR=${WORKDIR}/${EXPID}/inidata       # directory where some initial data are saved
@@ -72,7 +72,7 @@ ITYPE_CALENDAR=0
 #
 
 #... Email notifications from the batch system
-EMAIL_ADDRESS=     # replace this with your email address or leave the environment
+EMAIL_ADDRESS=michael.jaehn@c2sm.ethz.ch     # replace this with your email address or leave the environment
                    # variable empty to prevent getting emails from the batch system
                    # this concerns the mailing from the batch system NOT from the scripts
 
@@ -85,7 +85,7 @@ NOTIFICATION_ADDRESS=     # leave the environment variable empty to prevent gett
 NOTIFICATION_SCRIPT=${SPDIR}/src/notifications/mailx.sh
 
 #... project account (needed at DKRZ and CSCS)
-PROJECT_ACCOUNT=  # replace this with your actual project account
+PROJECT_ACCOUNT=cwp06 # replace this with your actual project account
 
 #===============================================================================
 #   Directory and binary path settings for utilities
@@ -282,7 +282,7 @@ TIME_PREP="00-01:00:00"
 
 #... conv2icon.job.sh settings
 PARTITION_CONV2ICON=normal
-TIME_CONV2ICON="00-02:00:00"
+TIME_CONV2ICON="00-02:30:00"
 OMP_THREADS_CONV2ICON=1
 (( TASKS_CONV2ICON=NODES*NTASKS_PER_NODE ))
 
@@ -298,13 +298,13 @@ NUM_PREFETCH_PROC=1         #num_prefetch_proc         !number of processors for
 
 #... arch.job.sh batch settings
 PARTITION_ARCH=normal
-TIME_ARCH="00-01:00:00"
+TIME_ARCH="00-02:30:00"
 (( TASKS_ARCH=NODES*NTASKS_PER_NODE ))
 
 #... post.job.sh batch settings
 PARTITION_POST=normal
-TIME_POST="00-00:40:00"
-TIME_POST_YEARLY="00-02:00:00"
+TIME_POST="00-01:40:00"
+TIME_POST_YEARLY="00-03:00:00"
 OMP_THREADS_POST=1
 (( TASKS_POST=NODES*NTASKS_PER_NODE ))
 
