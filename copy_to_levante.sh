@@ -10,18 +10,6 @@ ARCH_DIR=${BASE_DIR}/arch/${EXPID}
 WORK_DIR=${BASE_DIR}/work/${EXPID}
 POST_DIR=${WORK_DIR}/post
 DEST_DIR=/work/bb1364/ext_production_runs/work/${EXPID}
-#!/bin/bash
-
-set -e
-
-source job_settings
-
-# Set directories
-BASE_DIR=/capstor/store/cscs/userlab/cwp06/mjaehn/ICON-CLM
-ARCH_DIR=${BASE_DIR}/arch/${EXPID}
-WORK_DIR=${BASE_DIR}/work/${EXPID}
-POST_DIR=${WORK_DIR}/post
-DEST_DIR=/work/bb1364/ext_production_runs/work/${EXPID}
 
 # Sync data
 
@@ -34,11 +22,9 @@ if [ ! -f "${VARIABLES_FILE}" ]; then
   echo "Create a file named 'variables_to_copy' next to this script with one include pattern per line." >&2
   exit 1
 fi
-
+## (Run git config alias commands in your shell, not in this script)
 echo "Using variables file: ${VARIABLES_FILE}"
 
-# Build include arguments for rsync from the variables file (variable names only)
-# Always include the top-level yearly/ directory and any top-level *.nc files
 include_args=("--include=yearly/" "--include=*.nc")
 while IFS= read -r line || [ -n "$line" ]; do
   # trim leading/trailing whitespace
