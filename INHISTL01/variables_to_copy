@@ -1,0 +1,10 @@
+# Variable names (one per line). Use globs if needed (e.g. *_2M or FI500*).
+# Lines starting with # and blank lines are ignored.
+
+*_2M
+TOT_PREC
+PMSL
+FI500*
+ACLCT
+T_G
+W_SO
