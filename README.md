@@ -2,16 +2,40 @@
 
 This repo serves as a collection of setups for SPICE on CSCS Alps/Säntis.
 
+
 ## Usage
 
-It is recommended put the setups into an `experiments` folder
-of your [SPICE](https://github.com/C2SM/spice) root directory and clone this repo inside of it.
+### 1. Fork this repository
+
+First, fork this repository on GitHub to your own namespace. This allows you to push changes to your own fork.
+
+### 2. Add as a subtree
+
+Add your fork as a subtree in the `experiments` folder of your [SPICE](https://github.com/C2SM/spice) root directory:
 
 ```bash
 cd ${SPICE_DIR}
-git clone git@github.com:C2SM/spice-setups.git experiments
+git subtree add --prefix=experiments git@github.com:<your-username>/spice-setups.git main --squash
 cd experiments
 ```
+
+### 3. Working with the subtree
+
+To push changes made in the subtree back to your fork, use:
+
+```bash
+cd ${SPICE_DIR}
+git subtree push --prefix=experiments git@github.com:<your-username>/spice-setups.git main
+```
+
+To pull updates from your fork into the subtree, use:
+
+```bash
+cd ${SPICE_DIR}
+git subtree pull --prefix=experiments git@github.com:<your-username>/spice-setups.git main --squash
+```
+
+### 4. Create and modify your own case
 
 Afterwards create a copy of an existing case, rename it and adapt the 
 `job_settings` file. For example, to create your own ERA5-driven case:
