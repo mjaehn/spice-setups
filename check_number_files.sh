@@ -7,21 +7,23 @@ set -euo pipefail
 # Source job settings
 source job_settings
 
+# Argument parsing: detect year argument and flags
+analyze_arch=true
+analyze_post=true
+year_arg=""
 
-
-# If no argument is given, check yearly file consistency with optional --arch and --post flags
-if [[ $# -eq 0 || ($# -le 2 && ( "$1" == "--arch" || "$1" == "--post" || "$2" == "--arch" || "$2" == "--post" )) ]]; then
-  analyze_arch=true
-  analyze_post=true
-  # Parse flags
-  if [[ "$*" == *"--arch"* && "$*" != *"--post"* ]]; then
+for arg in "$@"; do
+  if [[ "$arg" =~ ^[0-9]{4}$ ]]; then
+    year_arg="$arg"
+  elif [[ "$arg" == "--arch" ]]; then
     analyze_post=false
-  elif [[ "$*" == *"--post"* && "$*" != *"--arch"* ]]; then
+  elif [[ "$arg" == "--post" ]]; then
     analyze_arch=false
   fi
+done
 
+if [[ -z "$year_arg" ]]; then
   echo "No year argument given. Checking yearly file consistency..."
-
   if $analyze_arch; then
     # ARCHIVE: Check all folders ${ARCHIVE_OUTDIR}/${EXPID}/????_?? contain the same number of files
     archive_dir="${ARCHIVE_OUTDIR}/${EXPID}"
@@ -90,7 +92,13 @@ if [[ $# -eq 0 || ($# -le 2 && ( "$1" == "--arch" || "$1" == "--post" || "$2" ==
     echo "=== POST yearly file count ==="
     # Get expected number of years from YDATE_START and YDATE_STOP
     ystart=${YDATE_START:0:4}
-    ystop=${YDATE_STOP:0:4}
+    # Read ystop from date.log (first 4 digits)
+    if [[ -f date.log ]]; then
+      ystop=$(( $(head -c 4 date.log) - 1 ))
+    else
+      echo "date.log not found!" >&2
+      exit 1
+    fi
     expected_years=$((ystop - ystart + 1))
     file_count=$(ls "$post_yearly_dir"/*.nc* 2>/dev/null | wc -l)
     echo "Files in $post_yearly_dir: $file_count"
@@ -127,9 +135,7 @@ if [[ $# -eq 0 || ($# -le 2 && ( "$1" == "--arch" || "$1" == "--post" || "$2" ==
   exit 0
 fi
 
-fi
-
-YYYY="$1"
+YYYY="$year_arg"
 
 # Function to count files per month in a given base directory
 count_files() {

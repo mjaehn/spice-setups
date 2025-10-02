@@ -20,7 +20,7 @@
 SPDIR=/users/mjaehn/git/spice/mj-euro_cordex_eval
 
 #... experiment identifier
-EXPID=INHISTL01            # alphanumeric characters for job identification
+EXPID=INS245L01            # alphanumeric characters for job identification
 EXPDIR=/capstor/store/cscs/userlab/cwp06/mjaehn/ICON-CLM
 
 #
@@ -38,6 +38,7 @@ DATADIR=/capstor/store/cscs/c2sm/c2sme/ICON-CLM
 ARCHIVE_OUTDIR=${EXPDIR}/arch       # directory where the results should be archived
 RESDIR=${WORKDIR}/${EXPID}/restarts      # restart data directory
 INIDIR=${WORKDIR}/${EXPID}/inidata       # directory where some initial data are saved
+HIST_INIDIR=/capstor/store/cscs/userlab/cwp06/mjaehn/ICON-CLM/work/INHISTL01/inidata
 ARCHIVE_INPDIR=                          # optional for already prepared forcing data: ini and lbc data (itype_conv2icon=0)
 ICONDIR=${SRCDIR}/icon-model
 
@@ -48,9 +49,9 @@ ICONDIR=${SRCDIR}/icon-model
 #
 
 #... set start and end date of the simulation
-YDATE_START_ISO="1950-01-01T00:00:00Z"          # start date of simulation YYYY-MM-DDTHH:MM:SSZ
-YDATE_STOP_ISO="2015-01-01T00:00:00Z"           # end date of simulation YYYY-MM-DDTHH:MM:SSZ
-SCEN="historical"
+YDATE_START_ISO="2015-01-01T00:00:00Z"          # start date of simulation YYYY-MM-DDTHH:MM:SSZ
+YDATE_STOP_ISO="2101-01-01T00:00:00Z"           # end date of simulation YYYY-MM-DDTHH:MM:SSZ
+SCEN="ssp245"
 #... transfer dates into YYYYMMDDHH format:
     YDATE_START=${YDATE_START_ISO:0:4}${YDATE_START_ISO:5:2}${YDATE_START_ISO:8:2}${YDATE_START_ISO:11:2}
     YDATE_STOP=${YDATE_STOP_ISO:0:4}${YDATE_STOP_ISO:5:2}${YDATE_STOP_ISO:8:2}${YDATE_STOP_ISO:11:2}
@@ -77,7 +78,7 @@ EMAIL_ADDRESS=michael.jaehn@c2sm.ethz.ch     # replace this with your email addr
                    # this concerns the mailing from the batch system NOT from the scripts
 
 #... Notification from the SPICE scripts
-NOTIFICATION_ADDRESS=     # leave the environment variable empty to prevent getting
+NOTIFICATION_ADDRESS=michael.jaehn@c2sm.ethz.ch     # leave the environment variable empty to prevent getting
                           # notifications from the scripts in case mailx is used this
                           # is your email address
 
@@ -187,7 +188,11 @@ PARENT_GRID=${INI_BASEDIR}/europe011/europe011_DOM01.parent.nc
 ##ECRAD data directory. Directory containing supplemental files for the ECRAD radiation scheme.
 ECRADDIR=${ICONDIR}/externals/ecrad/data                     # Point to the directory in the ICON distribution externals/ecrad/data    !!!!!! fill in local setting  !!!!!!
 ## Greenhouse concentration file
-GHG_FILENAME=${INI_BASEDIR}/independent/greenhouse_gases/greenhouse_ssp245.nc
+if [ ${SCEN} == "historical" ] ; then
+   GHG_FILENAME=${INI_BASEDIR}/independent/greenhouse_gases/greenhouse_ssp245.nc
+else
+   GHG_FILENAME=${INI_BASEDIR}/independent/greenhouse_gases/greenhouse_${SCEN}.nc
+fi
 
 #External parameters on ICON grid
 EXTPAR=${INI_BASEDIR}/europe011/external_parameter_icon_europe011_DOM01_tiles_MERIT_cdnc2_HWSD2.0-SOILTYP_9_5_GLlake.nc
@@ -226,8 +231,8 @@ PRECIP_INTERVAL=PT01H # interval for accumulating tot_prec in ISO8601 (needs to 
 RUNOFF_INTERVAL=PT06H # interval for accumulating runoff in ISO8601 (needs to be consistent with HOUT_INC above)
 SUNSHINE_INTERVAL=PT24H # interval for accumulating sunshine duration in ISO8601 (needs to be consistent with HOUT_INC above)
 MAXT_INTERVAL=PT24H # interval for min/max of 2m-temperature in ISO8601 (needs to be consistent with HOUT_INC above)
-GUST_INTERVAL=PT01H # interval for maximum of gust in 10m in ISO8601 (needs to be consistent with HOUT_INC above)
-MELT_INTERVAL=PT01H # interval for accumulating snow_melt in ISO8601 (needs to be consistent with HOUT_INC above)
+GUST_INTERVAL=PT24H # interval for maximum of gust in 10m in ISO8601 (needs to be consistent with HOUT_INC above)
+MELT_INTERVAL=PT06H # interval for accumulating snow_melt in ISO8601 (needs to be consistent with HOUT_INC above)
 OPERATION=("" "mean" "mean" "" "" "" "" "max" "" "" "" "" "mean") # operation parameter (this is just a work around until ICON-CLM gets a proper netCDF-CF output)
 NESTING_STREAM=0  # If you want to use an output stream to save quantities as input for further downscaling put the number of the output stream here.
                #   This chosen output stream is saved as is. Default = 0 means no output stream is saved as input for further downscaling.
@@ -254,8 +259,7 @@ LEVELS=${UL}...${LL}
 #===============================================================================
 
 GA_INSTITUTION="CLMcom-ETH"    # Name of Institution for the global attributes
-GA_TITLE="EURO-CORDEX 0.11 simulation with ICON-CLM and SPICE 2.3"
-#endif ims-cyclone
+GA_TITLE="Scenario SSP245 Simulation EURO-CORDEX 0.11 with ICON-CLM and SPICE 2.3"
 GA_PROJECT_ID="EXCLAIM"
 GA_REALIZATION=1
 GA_CONVENTIONS="CF-1.4"

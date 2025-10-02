@@ -633,8 +633,8 @@ then
   echo ${YDATE_NEXT} > ${PFDIR}/${EXPID}/date.log
   cat ${PFDIR}/${EXPID}/date.log
 
-# if [ ${YDATE_NEXT} != ${YDATE_STOP} ]
-# then
+  if [ ${YDATE_NEXT} != ${YDATE_STOP} ]
+  then
 
   ###################################################
   # submit the next ICON job
@@ -643,20 +643,20 @@ then
   #   The icon job will be submitted by conv2icon in
   #   this case
   ###################################################
-  # if [[ ${ITYPE_CONV2ICON} -eq 1 ]]
-  # then
-  #   YDATE_NEXT=${YDATE_NEXT}
-  #   if grep  "END ${YDATE_NEXT:0:4} ${YDATE_NEXT:4:2}"  ${WORKDIR}/${EXPID}/joblogs/conv2icon/finish_joblist
-  #   then
-  #     cd ${PFDIR}/${EXPID} ; ./subchain icon
-  #   else
-  #     echo prep/conv2icon jobs are not yet finished for ${YDATE_NEXT:0:4}_${YDATE_NEXT:4:2}
-  #     echo the icon job will be started at the end of the conv2icon job \(if the conv2icon job does not crash\)
-  #   fi
-  # else #ITYPE_CONV2ICON=0
-  #   cd ${PFDIR}/${EXPID} ; ./subchain icon noprep
-  # fi
-# fi
+    if [[ ${ITYPE_CONV2ICON} -eq 1 ]]
+    then
+      YDATE_NEXT=${YDATE_NEXT}
+      if grep  "END ${YDATE_NEXT:0:4} ${YDATE_NEXT:4:2}"  ${WORKDIR}/${EXPID}/joblogs/conv2icon/finish_joblist
+      then
+        cd ${PFDIR}/${EXPID} ; ./subchain icon
+      else
+        echo prep/conv2icon jobs are not yet finished for ${YDATE_NEXT:0:4}_${YDATE_NEXT:4:2}
+        echo the icon job will be started at the end of the conv2icon job \(if the conv2icon job does not crash\)
+      fi
+    else #ITYPE_CONV2ICON=0
+      cd ${PFDIR}/${EXPID} ; ./subchain icon noprep
+    fi
+  fi
 fi
 
 #-----------------------------------------------------------------------------
