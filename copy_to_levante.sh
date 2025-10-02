@@ -13,7 +13,7 @@ DEST_DIR=/work/bb1364/ext_production_runs/work/${EXPID}
 
 # Sync data
 
-# Location of variables file (one pattern per line). Comments starting with '#' and blank lines are ignored.
+# Location of variables file (one pattern per line).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VARIABLES_FILE="${SCRIPT_DIR}/variables_to_copy"
 
@@ -22,17 +22,12 @@ if [ ! -f "${VARIABLES_FILE}" ]; then
   echo "Create a file named 'variables_to_copy' next to this script with one include pattern per line." >&2
   exit 1
 fi
-## (Run git config alias commands in your shell, not in this script)
 echo "Using variables file: ${VARIABLES_FILE}"
 
 include_args=("--include=yearly/" "--include=*.nc")
 while IFS= read -r line || [ -n "$line" ]; do
-  # trim leading/trailing whitespace
-  var="$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-  # skip empty lines and comments
-  case "${var}" in
-    ""|#*) continue ;;
-  esac
+  var="$(echo $line | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  echo "Adding variable ${var} to include list"
   # Add include for the variable directory and its .ncz files under yearly/
   include_args+=("--include=yearly/${var}/")
   include_args+=("--include=yearly/${var}/*.ncz")
