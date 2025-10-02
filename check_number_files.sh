@@ -91,14 +91,9 @@ if [[ -z "$year_arg" ]]; then
     post_yearly_dir="${WORKDIR}/${EXPID}/post/yearly/T_2M"
     echo "=== POST yearly file count ==="
     # Get expected number of years from YDATE_START and YDATE_STOP
-    ystart=${YDATE_START:0:4}
-    # Read ystop from date.log (first 4 digits)
-    if [[ -f date.log ]]; then
-      ystop=$(( $(head -c 4 date.log) - 1 ))
-    else
-      echo "date.log not found!" >&2
-      exit 1
-    fi
+    #ystart=${YDATE_START:0:4}
+    ystart=1950
+    ystop=${YDATE_STOP:0:4}
     expected_years=$((ystop - ystart + 1))
     file_count=$(ls "$post_yearly_dir"/*.nc* 2>/dev/null | wc -l)
     echo "Files in $post_yearly_dir: $file_count"

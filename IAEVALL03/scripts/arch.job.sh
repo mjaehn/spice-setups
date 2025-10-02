@@ -633,8 +633,8 @@ then
   echo ${YDATE_NEXT} > ${PFDIR}/${EXPID}/date.log
   cat ${PFDIR}/${EXPID}/date.log
 
-  if [ ${YDATE_NEXT} != ${YDATE_STOP} ]
-  then
+# if [ ${YDATE_NEXT} != ${YDATE_STOP} ]
+# then
 
   ###################################################
   # submit the next ICON job
@@ -656,7 +656,7 @@ then
   # else #ITYPE_CONV2ICON=0
   #   cd ${PFDIR}/${EXPID} ; ./subchain icon noprep
   # fi
-  fi
+# fi
 fi
 
 #-----------------------------------------------------------------------------

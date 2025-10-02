@@ -23,10 +23,6 @@ for tarfile in "$src_dir"/*.tar; do
     target="$out_dir/nesting"
   elif [[ "$fname" =~ _out([0-9]{2})\.tar$ ]]; then
     num="${BASH_REMATCH[1]}"
-    if [[ "$num" == "01" ]]; then
-      echo "Skipping out01 tar file: $fname"
-      continue
-    fi
     target="$out_dir/out$num"
   else
     echo "Skipping unknown tar file: $fname"
