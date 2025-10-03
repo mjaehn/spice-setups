@@ -9,7 +9,11 @@ BASE_DIR=/capstor/store/cscs/userlab/cwp06/mjaehn/ICON-CLM
 ARCH_DIR=${BASE_DIR}/arch/${EXPID}
 WORK_DIR=${BASE_DIR}/work/${EXPID}
 POST_DIR=${WORK_DIR}/post
-DEST_DIR=/work/bb1364/ext_production_runs/work/${EXPID}
+if [[ "${EXPID}" == "IAEVALL"* ]]; then
+  DEST_DIR=/work/bb1149/production_runs/ICON-CLM/${EXPID}
+else
+  DEST_DIR=/work/bb1364/ext_production_runs/work/${EXPID}
+fi
 
 # Sync data
 
